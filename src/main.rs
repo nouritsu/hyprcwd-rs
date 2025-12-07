@@ -1,17 +1,27 @@
 mod error;
 
+use clap::Parser;
 use error::{HyprCWDError as Error, HyprCWDResult as Result};
 use hyprland::data::Client;
 use hyprland::shared::HyprDataActiveOptional;
 use procfs::process::Process;
-use std::env;
-use std::process::exit;
+use std::{env, path::PathBuf, process::exit};
+
+#[derive(Parser)]
+struct Args {
+    #[arg(long)]
+    default_dir: Option<PathBuf>,
+}
 
 fn main() {
+    let args = Args::parse();
     match active_window_cwd() {
         Ok(working_dir) => {
             println!("{}", working_dir);
         }
+        Err(Error::NoActiveWindow) if args.default_dir.is_some() => unsafe {
+            println!("{}", args.default_dir.unwrap_unchecked().to_string_lossy())
+        },
         Err(err) => {
             eprintln!("{}", err);
             exit(1);
